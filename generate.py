@@ -31,7 +31,22 @@ def concepts(n):
     return concepts, concepts_inv
 
 
-def questions(q, c, max_concepts=3, difficulty_fn=np.random.randn):
+def q_difficulty_function(concepts):
+    concept = concepts[0]
+    skill_difficulty = {
+        0: 10,  # Difficult
+        1: 3,  # Moderate
+        2: 0,  # Moderate
+        3: -4,  # Easy
+        4: 20,  # Extremely difficult
+    }
+    if concept < 5:
+        return skill_difficulty[concept] + np.random.randn()
+    else:
+        return np.random.randn()
+
+
+def questions(q, c, max_concepts=3, difficulty_fn=q_difficulty_function):
     """Generate q questions that sample from the c concepts
 
         q: nmuber of questions to generate
@@ -56,8 +71,9 @@ def questions(q, c, max_concepts=3, difficulty_fn=np.random.randn):
         n_concepts = np.random.choice(max_concepts, p=norm_inv_power_law(max_concepts))
 
         # Get which concepts this question should be (sample w/out replacement)
-        concepts = tuple(np.random.choice(c, size=n_concepts, replace=False))
-        difficulty = difficulty_fn()
+        concepts = tuple(np.random.choice(c, size=n_concepts + 1, replace=False))
+        # difficulty = difficulty_fn(concepts[0])
+        difficulty = q_difficulty_function(concepts)
 
         qs.append(Question(concepts, difficulty))
 
@@ -86,50 +102,58 @@ def learner_style():
         - Attempted Validation of the Scores of the VARK.pdf
     """
 
-    # Version 1: TODO fancier sampling of the learner styles
-    # From the sample in the paper. We take this to be a reasonable starting point
-    one_ls = 0.297  # Number of people with only one learning style
-    four_ls = 0.358  # Number of people with all learning styles
-    # Assume 2 and 3 learning styles are approximately the equal
-    two_ls = (1 - one_ls - four_ls) / 2
-    three_ls = (1 - one_ls - four_ls) / 2
-
-    rand_num = np.random.rand()
-    if rand_num < one_ls:
+    if True:
         # One learner style
         ls = np.zeros(4)
         ls[np.random.choice(4)] = 1.0
         return ls
-
-    elif rand_num < one_ls + two_ls:
-        # Two learner styles
-        ls = np.clip(np.random.randn(4) + 1, a_min=0.0, a_max=None) + 0.001
-        ls[np.random.choice(4, size=2, replace=False)] = 0  # randomly set 2 values to 0
-        return ls / np.sum(ls)
-
-    elif rand_num < one_ls + two_ls + three_ls:
-        # Three learner styles
-        ls = np.clip(np.random.randn(4) + 1, a_min=0.0, a_max=None) + 0.001
-        ls[np.random.choice(4)] = 0  # randomly set 1 values to 0
-        return ls / np.sum(ls)
-
-    elif rand_num < one_ls + two_ls + three_ls + four_ls:
-        # All learner styles
-        ls = np.clip(np.random.randn(4) + 1, a_min=0.0, a_max=None) + 0.001
-        return ls / np.sum(ls)
-
     else:
-        # should never happen
-        raise ValueError(
-            "Random number was above 1: rand_num:{}, 1-4_ls:{}".format(
-                rand_num, (one_ls, two_ls, three_ls, four_ls)
+        # Version 1: TODO fancier sampling of the learner styles
+        # From the sample in the paper. We take this to be a reasonable starting point
+        one_ls = 0.297  # Number of people with only one learning style
+        four_ls = 0.358  # Number of people with all learning styles
+        # Assume 2 and 3 learning styles are approximately the equal
+        two_ls = (1 - one_ls - four_ls) / 2
+        three_ls = (1 - one_ls - four_ls) / 2
+
+        rand_num = np.random.rand()
+        if rand_num < one_ls:
+            # One learner style
+            ls = np.zeros(4)
+            ls[np.random.choice(4)] = 1.0
+            return ls
+
+        elif rand_num < one_ls + two_ls:
+            # Two learner styles
+            ls = np.clip(np.random.randn(4) + 1, a_min=0.0, a_max=None) + 0.001
+            ls[
+                np.random.choice(4, size=2, replace=False)
+            ] = 0  # randomly set 2 values to 0
+            return ls / np.sum(ls)
+
+        elif rand_num < one_ls + two_ls + three_ls:
+            # Three learner styles
+            ls = np.clip(np.random.randn(4) + 1, a_min=0.0, a_max=None) + 0.001
+            ls[np.random.choice(4)] = 0  # randomly set 1 values to 0
+            return ls / np.sum(ls)
+
+        elif rand_num < one_ls + two_ls + three_ls + four_ls:
+            # All learner styles
+            ls = np.clip(np.random.randn(4) + 1, a_min=0.0, a_max=None) + 0.001
+            return ls / np.sum(ls)
+
+        else:
+            # should never happen
+            raise ValueError(
+                "Random number was above 1: rand_num:{}, 1-4_ls:{}".format(
+                    rand_num, (one_ls, two_ls, three_ls, four_ls)
+                )
             )
-        )
 
 
 def learner_skills(c, avg_skill=0, specific_skill_fn=None):
     """Create c learner skills using specific_skill_fn and avg_skill"""
     skills = np.zeros(c)
     for i in range(c):
-        skills[i] = specific_skill_fn(avg_skill)
+        skills[i] = specific_skill_fn(avg_skill, i)
     return skills

@@ -20,7 +20,7 @@ def specific_skill_fn(avg_skill):
 def one_concept_irt(theta, a=1, b=0, c=0.25):
     """Item Response Theory with one concept.
 
-        theta: skill level of student
+        theta: skill level of student (concept_skill)
         a: slope of signmoid (how sharp the cutoff is)
         b: question difficulty
         c: probability of random guess being correct
@@ -28,7 +28,7 @@ def one_concept_irt(theta, a=1, b=0, c=0.25):
     Return:
         prob_correct: probability of student getting the answer correct
     """
-    return c + (1 - c) / (1 + exp(a * (concept_skill - difficulty)))
+    return c + (1 - c) / (1 + np.exp(a * (theta - b)))
 
 
 def n_concept_irt(thetas, a=1, b=0, c=0.25):
@@ -49,13 +49,16 @@ def n_concept_irt(thetas, a=1, b=0, c=0.25):
 
     ### TODO: Research whether there should be only one difficulty, vs multiple
     #         for this question.
+    print("len(theta)", len(theta))
+    if len(theta) == 1:
+        return one_concept_irt(theta=thetas[0], a=a, b=b, c=c)
+    else:
+        weakest_skill = thetas[0]
+        for theta in thetas[1:]:
+            if theta < weakest_skill:
+                weakest_skill = theta
 
-    weakest_skill = thetas[0]
-    for theta in thetas[1:]:
-        if theta < weakest_skill:
-            weakest_skill = theta
-
-    return one_concept_irt(theta=weakest_skill, a=a, b=b, c=c)
+        return one_concept_irt(theta=weakest_skill, a=a, b=b, c=c)
 
 
 def exponential_forgetting_curve(x):
